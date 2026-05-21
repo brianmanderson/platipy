@@ -1,0 +1,51 @@
+name: Conformance
+
+# Runs the RTMaskConformanceTest analytical accuracy gate against platipy's
+# RTSTRUCT->mask conversion (platipy.dicom.io.rtstruct_to_nifti.convert_rtstruct).
+# The fixture (synthetic CT + RTSTRUCT + analytic per-ROI ground-truth NIfTIs) is
+# generated at the start of the job, so this workflow has no committed test data.
+#
+# This is intentionally a separate job (not part of the existing Build matrix)
+# so the Conformance status appears as its own check on PRs -- accuracy
+# regressions are easy to spot and easy to gate independently of the unit
+# tests. It also lets us use Python 3.12 (rtmask-conformance requires >=3.10),
+# while the main matrix still covers 3.8/3.9/3.10.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  conformance:
+    name: RTSTRUCT->mask conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-conformance.txt
+
+      - name: Install poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python - --version 1.7.1
+
+      - name: Install package + conformance suite
+        # poetry installs platipy plus the `dev` group (pytest, etc.). The
+        # conformance dep is a git URL, which PyPI metadata forbids, so it
+        # lives in requirements-conformance.txt and is installed with pip
+        # into the same virtualenv poetry just created.
+        run: |
+          poetry install --with dev
+          poetry run pip install -r requirements-conformance.txt
+
+      - name: Run conformance suite
+        run: poetry run pytest platipy/dicom/tests/test_conformance.py -v

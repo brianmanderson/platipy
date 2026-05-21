@@ -1,0 +1,17 @@
+# RTMaskConformanceTest threshold overrides for platipy.
+#
+# Defaults (Dice >= 0.95, sDSC1 >= 0.95, HD95 <= 2 mm, MSD <= 0.5 mm,
+# vol_err <= 3%) ship inside the rtmask-conformance package; per-primitive
+# overrides shallow-merge over those.
+#
+# Start with no overrides -- let the first CI run tell us which (if any)
+# ROIs need calibration for platipy's skimage.draw.polygon-based rasterizer.
+# Add documented relaxations only after measuring; each entry should record
+# what platipy currently produces, why, and the path back to the published
+# default (see DicomRTTool's tests/conformance.yaml for the model).
+#
+# If a rasterizer change lifts the actual metric, the corresponding line
+# here should be removed (or its number tightened) so the conformance gate
+# gets stricter.
+
+schema_version: 1
