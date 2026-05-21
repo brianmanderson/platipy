@@ -34,18 +34,17 @@ jobs:
             pyproject.toml
             requirements-conformance.txt
 
-      - name: Install poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python - --version 1.7.1
-
       - name: Install package + conformance suite
-        # poetry installs platipy plus the `dev` group (pytest, etc.). The
-        # conformance dep is a git URL, which PyPI metadata forbids, so it
-        # lives in requirements-conformance.txt and is installed with pip
-        # into the same virtualenv poetry just created.
+        # Use plain pip (not poetry) so we don't drag in the dev group's
+        # notebook tooling -- poetry.lock pins pyzmq 24.0.1, which fails to
+        # compile on Python 3.12 / gcc 13 and isn't needed here anyway. The
+        # conformance job only needs platipy + pytest + rtmask-conformance.
+        # poetry-core's PEP 517 backend handles `pip install -e .` cleanly.
         run: |
-          poetry install --with dev
-          poetry run pip install -r requirements-conformance.txt
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+          pip install -r requirements-conformance.txt
 
       - name: Run conformance suite
-        run: poetry run pytest platipy/dicom/tests/test_conformance.py -v
+        run: pytest platipy/dicom/tests/test_conformance.py -v
